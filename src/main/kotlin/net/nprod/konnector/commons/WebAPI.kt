@@ -14,7 +14,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readText
+import io.ktor.client.statement.bodyAsText
 import io.ktor.content.TextContent
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -129,9 +129,9 @@ interface WebAPI {
 
                 delayUpdate(response)
                 when (response.status.value) {
-                    HttpStatusCode.OK.value -> response.readText()
+                    HttpStatusCode.OK.value -> response.bodyAsText()
                     HttpStatusCode.NotFound.value -> throw NonExistent
-                    HttpStatusCode.BadRequest.value -> throw BadRequestError(response.readText())
+                    HttpStatusCode.BadRequest.value -> throw BadRequestError(response.bodyAsText())
                     HttpStatusCode.TooManyRequests.value -> {
                         delay(retryDelay)
                         throw TooManyRequests
