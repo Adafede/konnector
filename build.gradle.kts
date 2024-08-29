@@ -281,7 +281,6 @@ tasks {
 
 kotlinter {
     ignoreFailures = project.hasProperty("lintContinueOnError")
-    experimentalRules = project.hasProperty("lintKotlinExperimental")
 }
 
 detekt {
