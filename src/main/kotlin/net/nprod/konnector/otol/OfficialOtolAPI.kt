@@ -14,7 +14,7 @@ import io.ktor.util.KtorExperimentalAPI
 import mu.KotlinLogging
 import org.slf4j.Logger
 import kotlin.time.ExperimentalTime
-import kotlin.time.seconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Delay in ms between each request
@@ -68,7 +68,7 @@ class OfficialOtolAPI : OtolAPI {
         val intervalInt = interval?.filter { it != 's' }?.toIntOrNull()
         val limitInt = limit?.toLongOrNull()
         if ((intervalInt != null) && (limitInt != null))
-            delayTime = (intervalInt / limitInt).seconds.toLongMilliseconds()
+            delayTime = (intervalInt / limitInt).seconds.inWholeMilliseconds
     }
 
     /**
