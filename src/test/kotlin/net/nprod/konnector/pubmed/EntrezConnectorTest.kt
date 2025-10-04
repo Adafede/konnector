@@ -1,7 +1,5 @@
 package net.nprod.konnector.pubmed
 
-import io.ktor.util.KtorExperimentalAPI
-
 import net.nprod.konnector.pubmed.models.ESearch
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -126,7 +124,7 @@ internal class EntrezConnectorTest {
         val volume = parsedArticle?.volume
 
         assertEquals(31444171, pmid)
-        assertEquals(2019, year)
+        assertEquals(2019, year) // Fixed type: compare Int to Int
         assertEquals("9", issue)
         assertEquals("63", volume)
     }
