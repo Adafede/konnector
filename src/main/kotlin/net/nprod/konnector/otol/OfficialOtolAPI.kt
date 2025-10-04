@@ -13,8 +13,8 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.util.KtorExperimentalAPI
 import mu.KotlinLogging
 import org.slf4j.Logger
-import kotlin.time.ExperimentalTime
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 /**
  * Delay in ms between each request
@@ -63,12 +63,13 @@ class OfficialOtolAPI : OtolAPI {
     @ExperimentalTime
     private fun updateDelayFromHeaderData(
         limit: String? = OTOL_DEFAULT_NUMBER_OF_QUERIES_BY_INTERVAL,
-        interval: String? = OTOL_DEFAULT_INTERVAL
+        interval: String? = OTOL_DEFAULT_INTERVAL,
     ) {
         val intervalInt = interval?.filter { it != 's' }?.toIntOrNull()
         val limitInt = limit?.toLongOrNull()
-        if ((intervalInt != null) && (limitInt != null))
+        if ((intervalInt != null) && (limitInt != null)) {
             delayTime = (intervalInt / limitInt).seconds.inWholeMilliseconds
+        }
     }
 
     /**
@@ -78,7 +79,7 @@ class OfficialOtolAPI : OtolAPI {
     override fun delayUpdate(call: HttpResponse) {
         updateDelayFromHeaderData(
             call.headers["X-Rate-Limit-Limit"],
-            call.headers["X-Rate-Limit-Interval"]
+            call.headers["X-Rate-Limit-Interval"],
         )
         updateLastQueryTime()
     }

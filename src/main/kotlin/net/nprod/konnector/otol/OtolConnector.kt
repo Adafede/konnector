@@ -19,7 +19,7 @@ data class About(
     val author: String,
     val name: String,
     val source: String,
-    val version: String
+    val version: String,
 )
 
 @Serializable
@@ -32,7 +32,7 @@ data class ExtendedTaxonDescriptor(
     val unique_name: String,
     val flags: List<String>,
     val synonyms: List<String>,
-    val is_suppressed: Boolean
+    val is_suppressed: Boolean,
 )
 
 @Serializable
@@ -48,7 +48,7 @@ data class TaxonInfo(
     val is_suppressed: Boolean,
     val lineage: List<ExtendedTaxonDescriptor>? = null,
     val children: List<ExtendedTaxonDescriptor>? = null,
-    val terminal_descendants: List<Long>? = null
+    val terminal_descendants: List<Long>? = null,
 )
 
 @Serializable
@@ -58,7 +58,7 @@ data class TaxInfoQuery(
     val source_id: String? = null,
     val include_children: Boolean,
     val include_lineage: Boolean,
-    val include_terminal_descendants: Boolean
+    val include_terminal_descendants: Boolean,
 )
 
 @Serializable
@@ -67,7 +67,7 @@ data class MatchNamesQuery(
     val names: List<String>,
     val context_name: String? = null,
     val do_approximate_matching: Boolean = false,
-    val include_suppressed: Boolean = false
+    val include_suppressed: Boolean = false,
 )
 
 @Serializable
@@ -79,14 +79,14 @@ data class Matches(
     val is_approximate_match: Boolean,
     val taxon: ExtendedTaxonDescriptor,
     val search_string: String,
-    val matched_name: String
+    val matched_name: String,
 )
 
 @Serializable
 @Suppress("ConstructorParameterNaming")
 data class MatchedNameResult(
     val name: String,
-    val matches: List<Matches>
+    val matches: List<Matches>,
 )
 
 @Serializable
@@ -101,7 +101,7 @@ data class MatchedNames(
     val includes_suppressed_names: Boolean,
     val includes_approximate_matches: Boolean,
     val taxonomy: About,
-    val results: List<MatchedNameResult>
+    val results: List<MatchedNameResult>,
 )
 
 /**
@@ -112,12 +112,15 @@ data class MatchedNames(
  * Following https://github.com/OpenTreeOfLife/germinator/wiki/Taxonomy-API-v3#subtree_taxonomy
  */
 @ExperimentalTime
-class OtolConnector constructor(private val api: OtolAPI) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = false
-    }
+class OtolConnector constructor(
+    private val api: OtolAPI,
+) {
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            encodeDefaults = false
+        }
 
     val taxonomy = Taxonomy()
     val tnrs = Tnrs()
@@ -127,13 +130,13 @@ class OtolConnector constructor(private val api: OtolAPI) {
          * Get the version of the endpoint
          */
         fun about(): About {
-            val output = api.call(
-                api.apiURL + "taxonomy/about",
-                post = true
-            )
+            val output =
+                api.callPost(
+                    api.apiURL + "taxonomy/about",
+                )
             return json.decodeFromString(
                 About.serializer(),
-                output
+                output,
             )
         }
 
@@ -145,7 +148,7 @@ class OtolConnector constructor(private val api: OtolAPI) {
             sourceId: String? = null,
             includeChildren: Boolean = false,
             includeLineage: Boolean = false,
-            includeTerminalDescendants: Boolean = false
+            includeTerminalDescendants: Boolean = false,
         ): TaxonInfo {
             require((ottId == null && sourceId != null) || (ottId != null && sourceId == null)) {
                 "At least ottId or sourceId must be given (and not both)"
@@ -155,23 +158,24 @@ class OtolConnector constructor(private val api: OtolAPI) {
                     "Source id must be of the form db:id  where db is one of ncbi, gbif, worms, if, irmng"
                 }
             }
-            val output = api.call(
-                api.apiURL + "taxonomy/taxon_info",
-                post = true,
-                body = json.encodeToString(
-                    TaxInfoQuery.serializer(),
-                    TaxInfoQuery(
-                        ottId,
-                        sourceId,
-                        includeChildren,
-                        includeLineage,
-                        includeTerminalDescendants
-                    )
+            val output =
+                api.callPost(
+                    api.apiURL + "taxonomy/taxon_info",
+                    requestBody =
+                        json.encodeToString(
+                            TaxInfoQuery.serializer(),
+                            TaxInfoQuery(
+                                ottId,
+                                sourceId,
+                                includeChildren,
+                                includeLineage,
+                                includeTerminalDescendants,
+                            ),
+                        ),
                 )
-            )
             return json.decodeFromString(
                 TaxonInfo.serializer(),
-                output
+                output,
             )
         }
     }
@@ -184,7 +188,7 @@ class OtolConnector constructor(private val api: OtolAPI) {
             names: List<String>,
             contextName: String? = null,
             approximateMatching: Boolean = false,
-            includeSuppressed: Boolean = false
+            includeSuppressed: Boolean = false,
         ): MatchedNames {
             if (approximateMatching) {
                 require(names.size <= api.otolMaximumQuerySizeFuzzyNameMatch) {
@@ -195,21 +199,22 @@ class OtolConnector constructor(private val api: OtolAPI) {
                     "Only 1000 entries can be matched with exact matching"
                 }
             }
-            val output = api.call(
-                api.apiURL + "tnrs/match_names",
-                post = true,
-                body = json.encodeToString(
-                    MatchNamesQuery(
-                        names,
-                        contextName,
-                        approximateMatching,
-                        includeSuppressed
-                    )
+            val output =
+                api.callPost(
+                    api.apiURL + "tnrs/match_names",
+                    requestBody =
+                        json.encodeToString(
+                            MatchNamesQuery(
+                                names,
+                                contextName,
+                                approximateMatching,
+                                includeSuppressed,
+                            ),
+                        ),
                 )
-            )
             return json.decodeFromString(
                 MatchedNames.serializer(),
-                output
+                output,
             )
         }
     }

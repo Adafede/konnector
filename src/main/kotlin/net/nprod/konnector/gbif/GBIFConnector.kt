@@ -28,7 +28,7 @@ data class OccurenceSearchResponse(
     val limit: Int? = null,
     val endOfRecords: Boolean,
     val count: Long? = null,
-    val results: List<Occurence>
+    val results: List<Occurence>,
 )
 
 @Serializable
@@ -54,26 +54,30 @@ data class TaxonSearchResponse(
     val genusKey: Int? = null,
     val speciesKey: Int? = null,
     val synonym: Boolean? = null,
-    @SerialName("class") val taxoClass: String? = null
+    @SerialName("class") val taxoClass: String? = null,
 )
 
 @ExperimentalTime
 @KtorExperimentalAPI
-class GBIFConnector constructor(private val api: GBIFAPI) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+class GBIFConnector constructor(
+    private val api: GBIFAPI,
+) {
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     fun taxonkeyByName(name: String): TaxonSearchResponse {
-        val output = api.call(
-            api.apiURL + "species/match",
-            mutableMapOf("name" to name)
-        )
+        val output =
+            api.call(
+                api.apiURL + "species/match",
+                mutableMapOf("name" to name),
+            )
 
         return json.decodeFromString(
             TaxonSearchResponse.serializer(),
-            output
+            output,
         )
     }
 
@@ -82,12 +86,13 @@ class GBIFConnector constructor(private val api: GBIFAPI) {
         taxonKey: String? = null,
         limit: Int = 20,
         offset: Int = 0,
-        basisOfRecord: String? = null
+        basisOfRecord: String? = null,
     ): OccurenceSearchResponse {
-        val parameters = mutableMapOf(
-            "limit" to "$limit",
-            "offset" to "$offset"
-        )
+        val parameters =
+            mutableMapOf(
+                "limit" to "$limit",
+                "offset" to "$offset",
+            )
 
         taxonKey?.let {
             parameters["taxonKey"] = it
@@ -101,14 +106,15 @@ class GBIFConnector constructor(private val api: GBIFAPI) {
             parameters["q"] = it
         }
 
-        val output = api.call(
-            api.apiURL + "occurrence/search",
-            parameters
-        )
+        val output =
+            api.call(
+                api.apiURL + "occurrence/search",
+                parameters,
+            )
 
         return json.decodeFromString(
             OccurenceSearchResponse.serializer(),
-            output
+            output,
         )
     }
 }

@@ -10,10 +10,11 @@ internal class GBIFConnectorTest {
 
     @Test
     fun `taxon occurrence search`() {
-        val output = connector.occurenceOfTaxon(
-            "1",
-            offset = 42
-        )
+        val output =
+            connector.occurenceOfTaxon(
+                "1",
+                offset = 42,
+            )
         assertEquals(42, output.offset)
     }
 

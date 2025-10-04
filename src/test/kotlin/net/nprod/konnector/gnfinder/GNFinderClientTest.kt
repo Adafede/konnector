@@ -43,8 +43,8 @@ internal class GNFinderClientTest {
                 client.findNames(
                     "The source of the compound, Curcuma longa, is a plant.",
                     sources = (1..182),
-                    verification = true
-                )
+                    verification = true,
+                ),
         )
     }
 

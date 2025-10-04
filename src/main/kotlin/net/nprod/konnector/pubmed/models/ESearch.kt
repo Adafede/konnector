@@ -18,20 +18,20 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class Header(
     val type: String,
-    val version: String
+    val version: String,
 )
 
 @Serializable
 data class Translation(
     val from: String,
-    val to: String
+    val to: String,
 )
 
 sealed class GenericTranslationStackElement
 
 @Serializable
 data class OperatorStackElement(
-    val operator: String
+    val operator: String,
 ) : GenericTranslationStackElement()
 
 @Serializable
@@ -39,11 +39,11 @@ data class TranslationStackElement(
     val term: String,
     val field: String,
     val count: Int,
-    val explode: String
+    val explode: String,
 ) : GenericTranslationStackElement()
 
 @Serializable
-data class Esearchresult(
+data class EsearchResult(
     val count: Int,
     val retmax: Int? = null,
     val retstart: Int? = null,
@@ -52,22 +52,22 @@ data class Esearchresult(
     var idlist: List<Int>? = null,
     var translationset: List<Translation>? = null,
     // val translationstack: List<TranslationStackElement>, // This isn't easy to do with Moshi
-    var querytranslation: String? = null
+    var querytranslation: String? = null,
 )
 
 /**
- * The storage class for any Esearch result. It currently lacks support for translationstack
+ * The storage class for any ESearch result. It currently lacks support for translationstack
  */
 
 @Serializable
-data class Esearch(
+data class ESearch(
     val header: Header,
-    val esearchresult: Esearchresult,
+    val esearchresult: EsearchResult,
     var query: String? = null,
     @SerialName("message-type")
     val messageType: String? = null,
     @SerialName("message-version")
-    val messageVersion: String? = null
+    val messageVersion: String? = null,
 ) {
     /**
      * Get this object as a JSON string
@@ -87,11 +87,12 @@ data class Esearch(
      * Grab the number of citations that are can still be obtained (dynamic)
      */
     val citationsLeft: Int?
-        get() = if (esearchresult.retmax != null) {
-            esearchresult.count - esearchresult.retmax
-        } else {
-            null
-        }
+        get() =
+            if (esearchresult.retmax != null) {
+                esearchresult.count - esearchresult.retmax
+            } else {
+                null
+            }
 
     /**
      * Is it a count query only (dynamic)
@@ -104,12 +105,15 @@ data class Esearch(
      * Build an object from a JSON string
      */
     companion object {
-        fun fromString(str: String): Esearch = try {
-            Json.decodeFromString(serializer(), str)
-        } catch (e: SerializationException) {
-            throw ParsingError("Invalid JSON $e")
-        }
+        fun fromString(str: String): ESearch =
+            try {
+                Json.decodeFromString(serializer(), str)
+            } catch (e: SerializationException) {
+                throw ParsingError("Invalid JSON $e")
+            }
     }
 }
 
-class ParsingError(s: String) : Throwable(s)
+class ParsingError(
+    s: String,
+) : Throwable(s)

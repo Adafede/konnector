@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
 data class DateBlock(
     @SerialName("date-time") val datetime: String? = null,
     @SerialName("date-parts") val dateParts: List<List<Int?>>?,
-    val timestamp: Long? = null
+    val timestamp: Long? = null,
     // Missing date-parts
     // Missing timestamp
 )
@@ -25,18 +25,18 @@ data class Funder(
     @SerialName("DOI") val doi: String? = null,
     val name: String? = null,
     @SerialName("doi-asserted-by") val doiAssertedBy: String? = null,
-    val award: List<String>? = null
+    val award: List<String>? = null,
 )
 
 @Serializable
 data class Domain(
     val domain: List<String>? = null,
-    @SerialName("crossmark-restriction") val crossmarkRestriction: Boolean? = null
+    @SerialName("crossmark-restriction") val crossmarkRestriction: Boolean? = null,
 )
 
 @Serializable
 data class Affiliation(
-    val name: String? = null
+    val name: String? = null,
 )
 
 @Serializable
@@ -46,7 +46,7 @@ data class Author(
     val given: String? = null,
     val family: String? = null,
     val sequence: String? = null,
-    val affiliation: List<Affiliation>?
+    val affiliation: List<Affiliation>?,
 )
 
 @Serializable
@@ -58,7 +58,7 @@ data class Reference(
     val year: String? = null,
     @SerialName("journal-title") val journalTitle: String? = null,
     val doi: String? = null,
-    @SerialName("doi-asserted-by") val doiAssertedBy: String? = null
+    @SerialName("doi-asserted-by") val doiAssertedBy: String? = null,
 )
 
 @Serializable
@@ -66,35 +66,35 @@ data class Link(
     @SerialName("URL") val url: String,
     @SerialName("content-type") val contentType: String? = null,
     @SerialName("content-version") val contentVersion: String? = null,
-    @SerialName("intended-application") val intendedApplication: String? = null
+    @SerialName("intended-application") val intendedApplication: String? = null,
 )
 
 @Serializable
 data class Issue(
     @SerialName("published-print") val publishedPrint: DateBlock? = null,
-    val issue: String? = null
+    val issue: String? = null,
 )
 
 @Serializable
 data class Relation(
-    val cities: List<String>? = null
+    val cities: List<String>? = null,
 )
 
 @Serializable
 data class ISSN(
     val value: String? = null,
-    val type: String? = null
+    val type: String? = null,
 )
 
 @Serializable
 data class Explanation(
-    @SerialName("URL") val url: String? = null
+    @SerialName("URL") val url: String? = null,
 )
 
 @Serializable
 data class Group(
     val name: String? = null,
-    val label: String? = null
+    val label: String? = null,
 )
 
 @Serializable
@@ -102,7 +102,7 @@ data class Assertion(
     val value: String? = null,
     val name: String? = null,
     val explanation: Explanation? = null,
-    val group: Group? = null
+    val group: Group? = null,
 )
 
 @Serializable
@@ -146,7 +146,7 @@ data class SingleWork(
     val relation: Relation? = null,
     @SerialName("ISSN") val issn: List<String>? = null,
     @SerialName("issn-type") val issnType: List<ISSN>? = null,
-    val assertion: List<Assertion>? = null
+    val assertion: List<Assertion>? = null,
 )
 
 @Serializable
@@ -154,7 +154,7 @@ data class WorkResponse(
     val status: String,
     @SerialName("message-type") val messageType: String? = null,
     @SerialName("message-version") val messageVersion: String? = null,
-    val message: SingleWork? = null
+    val message: SingleWork? = null,
 )
 
 @Serializable
@@ -163,7 +163,7 @@ class Facets
 @Serializable
 data class WorkList(
     val facets: Facets? = null,
-    val items: List<SingleWork>? = null
+    val items: List<SingleWork>? = null,
 )
 
 @Serializable
@@ -171,5 +171,5 @@ data class WorksResponse(
     val status: String,
     @SerialName("message-type") val messageType: String? = null,
     @SerialName("message-version") val messageVersion: String? = null,
-    val message: WorkList? = null
+    val message: WorkList? = null,
 )

@@ -43,7 +43,7 @@ data class GNFinderResult(
 @Serializable
 data class GNFinderVerification(
     val bestResult: GNFinderResult? = null,
-    val preferredResults: List<GNFinderResult>? = null
+    val preferredResults: List<GNFinderResult>? = null,
 )
 
 @Serializable
@@ -56,12 +56,12 @@ data class GNFinderNames(
     val offsetEnd: Int? = null,
     val annotationNomenType: String? = null,
     val annotation: String? = null,
-    val verification: GNFinderVerification? = null
+    val verification: GNFinderVerification? = null,
 )
 
 @Serializable
 data class GNFinderResponse(
-    val names: List<GNFinderNames>? = listOf()
+    val names: List<GNFinderNames>? = listOf(),
 )
 
 fun voidRequest(): Gnfinder.Void = Gnfinder.Void.newBuilder().build()
@@ -69,33 +69,48 @@ fun voidRequest(): Gnfinder.Void = Gnfinder.Void.newBuilder().build()
 /**
  * Connect to a local GNFinder instance accessible by gRPC
  */
-class GNFinderClient(val target: String, private val dispatcher: ExecutorCoroutineDispatcher) : Closeable {
+class GNFinderClient(
+    target: String,
+    dispatcher: ExecutorCoroutineDispatcher,
+) : Closeable {
     private val channel =
-        ManagedChannelBuilder.forTarget(target).usePlaintext().executor(dispatcher.asExecutor()).build()
-    private val stub: GNFinderGrpcKt.GNFinderCoroutineStub = GNFinderGrpcKt.GNFinderCoroutineStub(channel)
+        ManagedChannelBuilder
+            .forTarget(target)
+            .usePlaintext()
+            .executor(dispatcher.asExecutor())
+            .build()
+    private val stub: GNFinderGrpcKt.GNFinderCoroutineStub =
+        GNFinderGrpcKt.GNFinderCoroutineStub(channel)
 
-    fun ping(): String = runBlocking {
-        stub.ping(voidRequest()).value
-    }
+    fun ping(): String =
+        runBlocking {
+            stub.ping(voidRequest()).value
+        }
 
-    fun ver(): String = runBlocking {
-        stub.ver(voidRequest()).version
-    }
+    fun ver(): String =
+        runBlocking {
+            stub.ver(voidRequest()).version
+        }
 
     fun findNames(
         query: String,
         language: String = "english",
         sources: Iterable<Int> = listOf(),
-        verification: Boolean = false
+        verification: Boolean = false,
     ): String {
-        val message = runBlocking {
-            val params = Gnfinder.Params.newBuilder()
-            params.language = language
-            params.text = query
-            params.verification = verification
-            params.addAllSources(sources)
-            stub.findNames(params.build())
-        }
+        val message =
+            runBlocking {
+                val params =
+                    Gnfinder.Params
+                        .newBuilder()
+                        .apply {
+                            this.language = language
+                            this.text = query
+                            this.verification = verification
+                            this.addAllSources(sources)
+                        }.build()
+                stub.findNames(params)
+            }
         val printer = JsonFormat.printer()
         return printer.print(message)
     }
@@ -104,16 +119,17 @@ class GNFinderClient(val target: String, private val dispatcher: ExecutorCorouti
         query: String,
         language: String = "english",
         sources: Iterable<Int> = listOf(),
-        verification: Boolean = false
+        verification: Boolean = false,
     ): GNFinderResponse {
-        val json = Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-        }
+        val json =
+            Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+            }
 
         return json.decodeFromString(
             GNFinderResponse.serializer(),
-            findNames(query, language, sources, verification)
+            findNames(query, language, sources, verification),
         )
     }
 

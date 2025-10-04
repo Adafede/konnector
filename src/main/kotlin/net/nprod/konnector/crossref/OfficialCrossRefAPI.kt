@@ -28,7 +28,7 @@ class OfficialCrossRefAPI(
     private val networkConnectTimeout: Long = 20000,
     private val networkRequestTimeout: Long = 20000,
     private val connectionAttempts: Int = 5,
-    private val numberOfThreads: Int = 4
+    private val numberOfThreads: Int = 4,
 ) : CrossRefAPI {
     override val log: Logger = KotlinLogging.logger(this::class.java.name)
     override var httpClient: HttpClient = newClient()
@@ -45,11 +45,15 @@ class OfficialCrossRefAPI(
      *
      */
     @ExperimentalTime
-    private fun updateDelayFromHeaderData(limit: String? = "50", interval: String? = "1s") {
+    private fun updateDelayFromHeaderData(
+        limit: String? = "50",
+        interval: String? = "1s",
+    ) {
         val intervalInt = interval?.filter { it != 's' }?.toIntOrNull()
         val limitInt = limit?.toLongOrNull()
-        if ((intervalInt != null) && (limitInt != null))
+        if ((intervalInt != null) && (limitInt != null)) {
             delayTime = (intervalInt / limitInt).seconds.inWholeMilliseconds
+        }
     }
 
     /**
@@ -58,22 +62,23 @@ class OfficialCrossRefAPI(
     override fun delayUpdate(call: HttpResponse) {
         updateDelayFromHeaderData(
             call.headers["X-Rate-Limit-Limit"],
-            call.headers["X-Rate-Limit-Interval"]
+            call.headers["X-Rate-Limit-Interval"],
         )
         updateLastQueryTime()
     }
 
-    override fun newClient(): HttpClient = HttpClient(CIO) {
-        expectSuccess = false
-        engine {
-            threadsCount = numberOfThreads
+    override fun newClient(): HttpClient =
+        HttpClient(CIO) {
+            expectSuccess = false
+            engine {
+                threadsCount = numberOfThreads
 
-            with(endpoint) {
-                requestTimeout = networkRequestTimeout
-                keepAliveTime = networkKeepAliveTime
-                connectTimeout = networkConnectTimeout
-                connectAttempts = connectionAttempts
+                with(endpoint) {
+                    requestTimeout = networkRequestTimeout
+                    keepAliveTime = networkKeepAliveTime
+                    connectTimeout = networkConnectTimeout
+                    connectAttempts = connectionAttempts
+                }
             }
         }
-    }
 }

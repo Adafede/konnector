@@ -54,12 +54,13 @@ class OfficialShortDOIAPI : ShortDOIAPI {
     @ExperimentalTime
     private fun updateDelayFromHeaderData(
         limit: String? = SHORTDOI_DEFAULT_NUMBER_OF_QUERIES_BY_INTERVAL,
-        interval: String? = SHORTDOI_DEFAULT_INTERVAL
+        interval: String? = SHORTDOI_DEFAULT_INTERVAL,
     ) {
         val intervalInt = interval?.filter { it != 's' }?.toIntOrNull()
         val limitInt = limit?.toLongOrNull()
-        if ((intervalInt != null) && (limitInt != null))
+        if ((intervalInt != null) && (limitInt != null)) {
             delayTime = (intervalInt / limitInt).seconds.inWholeMilliseconds
+        }
     }
 
     /**
@@ -68,7 +69,7 @@ class OfficialShortDOIAPI : ShortDOIAPI {
     override fun delayUpdate(call: HttpResponse) {
         updateDelayFromHeaderData(
             call.headers["X-Rate-Limit-Limit"],
-            call.headers["X-Rate-Limit-Interval"]
+            call.headers["X-Rate-Limit-Interval"],
         )
         updateLastQueryTime()
     }

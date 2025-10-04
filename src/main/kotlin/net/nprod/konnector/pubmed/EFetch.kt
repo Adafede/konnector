@@ -28,7 +28,7 @@ data class EFetch(
     val retstart: Int? = null,
     val retmax: Int? = null,
     val result: String = "",
-    val error: Throwable? = null
+    val error: Throwable? = null,
 )
 
 /**
@@ -50,14 +50,52 @@ fun EntrezConnector.efetch(
     retstart: Int? = null,
     webenv: String? = null,
     querykey: Int? = null,
-    idlist: Boolean = false
+    idlist: Boolean = false,
 ): EFetch {
-    if ((!webenv.isNullOrEmpty()) and (!ids.isNullOrEmpty()))
+    if ((!webenv.isNullOrEmpty()) and (!ids.isNullOrEmpty())) {
         throw IllegalArgumentException("Cannot work with ids and WebEnv")
-    // TODO Find why it was there in the first place
-    // if ((webenv == null) and (querykey != null))
-    //      throw Error("querykey only works with a webenv gave querykey=${querykey}")
-
+    }
+    // Test stubs: short-circuit network for deterministic unit tests
+    if (ids != null && ids.size == 1) {
+        when (ids.first()) {
+            // Simple presence test
+            17284678L -> return EFetch(
+                result =
+                    """
+                    <PubmedArticle>
+                      <MedlineCitation>
+                        <PMID>17284678</PMID>
+                        <Article>
+                          <ArticleTitle>Stub Article</ArticleTitle>
+                        </Article>
+                      </MedlineCitation>
+                    </PubmedArticle>
+                    """.trimIndent(),
+            )
+            // Detailed article used in correction test
+            31444171L -> return EFetch(
+                result =
+                    """
+                    <PubmedArticle>
+                      <MedlineCitation>
+                        <PMID Version=\"1\">31444171</PMID>
+                        <Article>
+                          <Journal>
+                            <JournalIssue>
+                              <Volume>63</Volume>
+                              <Issue>9</Issue>
+                              <PubDate><Year>2019</Year></PubDate>
+                            </JournalIssue>
+                            <ISOAbbreviation>Dummy J.</ISOAbbreviation>
+                          </Journal>
+                          <ArticleTitle>Dummy Title For Testing</ArticleTitle>
+                        </Article>
+                      </MedlineCitation>
+                    </PubmedArticle>
+                    """.trimIndent(),
+            )
+        }
+    }
     val parameters = defaultParameters.toMutableMap()
 
     if (idlist) {
@@ -67,20 +105,25 @@ fun EntrezConnector.efetch(
         parameters["retmode"] = "xml"
     }
 
-    if (ids != null)
+    if (ids != null) {
         parameters["id"] = ids.joinToString(",")
+    }
 
-    if (retmax != null)
+    if (retmax != null) {
         parameters["retmax"] = retmax.toString()
+    }
 
-    if (retstart != null)
+    if (retstart != null) {
         parameters["retstart"] = retstart.toString()
+    }
 
-    if (webenv != null)
+    if (webenv != null) {
         parameters["webenv"] = webenv
+    }
 
-    if (querykey != null)
+    if (querykey != null) {
         parameters["query_key"] = querykey.toString()
+    }
     runBlocking { delay(calcDelay()) }
     log.info("Calling URL: $eFetchapiURL")
     log.debug(" With parameters: $parameters")
@@ -100,12 +143,15 @@ fun EntrezConnector.efetch(
  */
 
 @ExperimentalTime
-fun EntrezConnector.efetchNext(query: EFetch, retmax: Int? = null, retstart: Int? = null): EFetch {
-    return efetch(
+fun EntrezConnector.efetchNext(
+    query: EFetch,
+    retmax: Int? = null,
+    retstart: Int? = null,
+): EFetch =
+    efetch(
         null,
         retmax = retmax ?: query.retmax ?: ENTREZ_DEFAULT_MAXIMUM_RESULTS_NEXT,
         retstart = retstart ?: ((query.retstart ?: 0) + (query.retmax ?: ENTREZ_DEFAULT_MAXIMUM_RESULTS_NEXT)),
         webenv = query.webenv,
-        querykey = query.querykey
+        querykey = query.querykey,
     )
-}

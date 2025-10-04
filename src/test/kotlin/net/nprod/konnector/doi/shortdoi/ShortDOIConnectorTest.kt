@@ -13,7 +13,6 @@ import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
 internal class ShortDOIConnectorTest {
-
     @Test
     fun shorten() {
         val result =

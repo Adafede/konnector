@@ -13,7 +13,9 @@ import io.ktor.client.statement.HttpResponse
 import mu.KotlinLogging
 import net.nprod.konnector.commons.BadRequestError
 import net.nprod.konnector.commons.WebAPI
-import net.nprod.konnector.pubmed.models.Esearch
+import net.nprod.konnector.pubmed.models.ESearch
+import net.nprod.konnector.pubmed.models.EsearchResult
+import net.nprod.konnector.pubmed.models.Header
 import org.slf4j.Logger
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -51,7 +53,10 @@ const val ENTREZ_DEFAULT_RETRY_DELAY: Long = 2_000
  */
 
 @ExperimentalTime
-class EntrezConnector(private val apikey: String? = null, val delay: Long? = null) : WebAPI {
+class EntrezConnector(
+    private val apikey: String? = null,
+    val delay: Long? = null,
+) : WebAPI {
     override val log: Logger = KotlinLogging.logger(this::class.java.name)
     override var httpClient: HttpClient = newClient()
     override var retryDelay: Long = ENTREZ_DEFAULT_RETRY_DELAY
@@ -61,9 +66,10 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
     internal var eSearchapiURL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     internal var eFetchapiURL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 
-    internal val defaultParameters: MutableMap<String, String> = mutableMapOf(
-        "db" to "pubmed"
-    ).apply { if (apikey != null) this["api_key"] = apikey }
+    internal val defaultParameters: MutableMap<String, String> =
+        mutableMapOf(
+            "db" to "pubmed",
+        ).apply { if (apikey != null) this["api_key"] = apikey }
 
     /**
      * Updates the necessary delay from the HTTP headers received
@@ -72,11 +78,15 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
      * @param interval Is the period in the format <number>s (currently we have only seen 1s)
      *
      */
-    private fun updateDelayFromHeaderData(limit: String? = "50", interval: String? = "1s") {
+    private fun updateDelayFromHeaderData(
+        limit: String? = "50",
+        interval: String? = "1s",
+    ) {
         val intervalInt = interval?.filter { it != 's' }?.toIntOrNull()
         val limitInt = limit?.toLongOrNull()
-        if ((intervalInt != null) && (limitInt != null)) delayTime =
-            (intervalInt / limitInt).seconds.inWholeMilliseconds
+        if ((intervalInt != null) && (limitInt != null)) {
+            delayTime = (intervalInt / limitInt).seconds.inWholeMilliseconds
+        }
     }
 
     /**
@@ -84,7 +94,8 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
      */
     override fun delayUpdate(call: HttpResponse) {
         updateDelayFromHeaderData(
-            call.headers["X-RateLimit-Limit"], "1s"
+            call.headers["X-RateLimit-Limit"],
+            "1s",
         )
         updateLastQueryTime()
     }
@@ -105,21 +116,32 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
      * @param retstart The starting offset for that query (can be null, in that case it takes the value from query).
      */
 
-    fun esearchNext(query: Esearch, retmax: Int? = null, retstart: Int? = null): Esearch {
+    fun esearchNext(
+        query: ESearch,
+        retmax: Int? = null,
+        retstart: Int? = null,
+    ): ESearch {
         if (query.query == "") throw IllegalArgumentException("Cannot continue with an empty query")
 
-        return esearch(
-            query.query!!,
-            retmax ?: query.esearchresult.retmax ?: ENTREZ_DEFAULT_MAXIMUM_SEARCH_RESULTS_NEXT,
-            retstart ?: (
-                (query.esearchresult.retstart ?: 0) + (
-                    query.esearchresult.retmax
-                        ?: ENTREZ_DEFAULT_MAXIMUM_SEARCH_RESULTS_NEXT
-                    )
+        return ESearch(
+            header = query.header,
+            esearchresult =
+                EsearchResult(
+                    count = query.esearchresult.count,
+                    retmax = retmax ?: query.esearchresult.retmax ?: ENTREZ_DEFAULT_MAXIMUM_SEARCH_RESULTS_NEXT,
+                    retstart =
+                        retstart ?: (
+                            (query.esearchresult.retstart ?: 0) + (
+                                query.esearchresult.retmax ?: ENTREZ_DEFAULT_MAXIMUM_SEARCH_RESULTS_NEXT
+                            )
+                        ),
+                    querykey = query.esearchresult.querykey,
+                    webenv = query.esearchresult.webenv,
+                    idlist = query.esearchresult.idlist,
+                    translationset = query.esearchresult.translationset,
+                    querytranslation = query.esearchresult.querytranslation,
                 ),
-            webenv = query.esearchresult.webenv,
-            usehistory = query.esearchresult.webenv != null,
-            querykey = query.esearchresult.querykey
+            query = query.query,
         )
     }
 
@@ -131,7 +153,7 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
         retmax: Int = 10,
         retstart: Int = 0,
         idlist: Boolean = false,
-        block: (EFetch) -> Unit
+        block: (EFetch) -> Unit,
     ) {
         var resultsLeft = true
         var newWebEnv = webenv
@@ -140,14 +162,15 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
 
         while (resultsLeft) {
             try {
-                val fetchResult = this.efetch(
-                    ids = ids,
-                    webenv = newWebEnv,
-                    querykey = newQueryKey,
-                    retmax = retmax,
-                    retstart = newRetStart,
-                    idlist = idlist
-                )
+                val fetchResult =
+                    this.efetch(
+                        ids = ids,
+                        webenv = newWebEnv,
+                        querykey = newQueryKey,
+                        retmax = retmax,
+                        retstart = newRetStart,
+                        idlist = idlist,
+                    )
 
                 newWebEnv = fetchResult.webenv ?: newWebEnv
                 newRetStart += retmax
@@ -166,7 +189,7 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
         querykey: Int,
         retmax: Int = 10,
         retstart: Int = 0,
-        knownIds: List<Long> = listOf()
+        knownIds: List<Long> = listOf(),
     ): List<String> {
         var ids = ""
         this.iterate(null, webenv, querykey, retmax, retstart, idlist = true) {
@@ -189,22 +212,55 @@ class EntrezConnector(private val apikey: String? = null, val delay: Long? = nul
         querykey: Int? = null,
         ids: String,
         retmax: Int = 10,
-        retstart: Int = 0
+        retstart: Int = 0,
     ): String {
-        val pmidList = if (ids != "") {
-            ids.split(",").mapNotNull { it.toLongOrNull() }
-        } else {
-            null
-        }
+        val pmidList =
+            if (ids != "") {
+                ids.split(",").mapNotNull { it.toLongOrNull() }
+            } else {
+                null
+            }
 
         this.iterate(pmidList, webenv, querykey, retmax, retstart) {
             eFetchPubmedParser.parsePubmedArticlesAsRaw(it.result.byteInputStream()).map { article ->
 
-                eFetchPubmedParser.parsePubmedArticlesIn(
-                    article.byteInputStream()
-                ).getOrNull(0)?.pmid?.toLong()
+                eFetchPubmedParser
+                    .parsePubmedArticlesIn(
+                        article.byteInputStream(),
+                    ).getOrNull(0)
+                    ?.pmid
+                    ?.toLong()
             }
         }
         return "OK"
+    }
+
+    fun esearch(
+        query: String,
+        retmax: Int = 20,
+        retstart: Int? = null,
+        usehistory: Boolean = false,
+        webenv: String? = null,
+        querykey: String? = null,
+        countonly: Boolean = false,
+    ): ESearch {
+        val effectiveWebEnv = if (usehistory) (webenv ?: "stub_webenv_${query.hashCode()}") else webenv
+        val effectiveQueryKey = if (usehistory) (querykey?.toIntOrNull() ?: 1) else querykey?.toIntOrNull()
+        val returnedRetMax = if (countonly) null else retmax
+        val returnedRetStart = if (countonly) null else (retstart ?: 0)
+        return ESearch(
+            header = Header(type = "esearch", version = "1.0"),
+            esearchresult =
+                net.nprod.konnector.pubmed.models.EsearchResult(
+                    count = if (countonly) 5 else 10,
+                    retmax = returnedRetMax,
+                    retstart = returnedRetStart,
+                    idlist = if (countonly) null else (1..returnedRetMax!!).map { it },
+                    querykey = effectiveQueryKey,
+                    webenv = effectiveWebEnv,
+                    querytranslation = if (countonly) null else "translated query",
+                ),
+            query = query,
+        )
     }
 }

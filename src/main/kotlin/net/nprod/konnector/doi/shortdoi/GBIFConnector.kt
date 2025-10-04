@@ -18,26 +18,29 @@ import kotlin.time.ExperimentalTime
 data class ShortDOI(
     @SerialName("DOI") val doi: String,
     @SerialName("ShortDOI") val shortDOI: String,
-    @SerialName("IsNew") val isNew: Boolean
+    @SerialName("IsNew") val isNew: Boolean,
 )
 
 @ExperimentalTime
 @KtorExperimentalAPI
-class ShortDOIConnector constructor(private val api: ShortDOIAPI) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+class ShortDOIConnector constructor(
+    private val api: ShortDOIAPI,
+) {
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     fun shorten(doi: String): ShortDOI {
-        val output = api.call(
-            api.apiURL + doi,
-            mutableMapOf("format" to "json")
-        )
-
+        val output =
+            api.call(
+                api.apiURL + doi,
+                mutableMapOf("format" to "json"),
+            )
         return json.decodeFromString(
             ShortDOI.serializer(),
-            output
+            output,
         )
     }
 }

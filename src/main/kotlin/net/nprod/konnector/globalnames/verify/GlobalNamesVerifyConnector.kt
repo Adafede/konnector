@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 @Serializable
 data class Version(
     val version: String,
-    val build: String
+    val build: String,
 )
 
 @Serializable
@@ -31,21 +31,21 @@ data class DataSource(
     val isOutlinkReady: Boolean? = null,
     val curation: String,
     val recordCount: Long,
-    val updatedAt: String
+    val updatedAt: String,
 )
 
 @Serializable
 data class VerificationQuery(
     val nameStrings: List<String>,
     val preferredSources: List<Int>,
-    val withVernaculars: Boolean
+    val withVernaculars: Boolean,
 )
 
 @Serializable
 data class Kingdoms(
     val name: String,
     val namesNum: Int,
-    val percentage: Double
+    val percentage: Double,
 )
 
 @Serializable
@@ -63,9 +63,8 @@ data class VerificationMetadata(
     val contextPercentage: Double? = null,
     val kingdom: String? = null,
     val kingdomPercentage: Double? = null,
-    val Kingdoms: List<Kingdoms>? = null
+    val Kingdoms: List<Kingdoms>? = null,
 )
-
 
 @Serializable
 data class ScoreDetails(
@@ -74,7 +73,7 @@ data class ScoreDetails(
     val curatedDataScore: Double,
     val authorMatchScore: Double,
     val acceptedNameScore: Double,
-    val parsingQualityScore: Double
+    val parsingQualityScore: Double,
 )
 
 @Serializable
@@ -103,7 +102,7 @@ data class ResultData(
     val editDistance: Int,
     val editDistanceStem: Int? = null,
     val matchType: String? = null,
-    val scoreDetails: ScoreDetails
+    val scoreDetails: ScoreDetails,
 )
 
 @Serializable
@@ -116,15 +115,14 @@ data class VerificationName(
     val dataSourcesNum: Int,
     val curation: String,
     val overloadDetected: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 @Serializable
 data class Verification(
     val metadata: VerificationMetadata,
-    val names: List<VerificationName>
+    val names: List<VerificationName>,
 )
-
 
 /**
  * Connects against GlobalNames verify
@@ -135,11 +133,14 @@ data class Verification(
  * https://app.swaggerhub.com/apis-docs/dimus/gnames/1.0.0#/Verification
  */
 @ExperimentalTime
-class GlobalNamesVerifyConnector constructor(private val api: GlobalNamesVerifyAPI) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+class GlobalNamesVerifyConnector constructor(
+    private val api: GlobalNamesVerifyAPI,
+) {
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     /**
      * Issues a ping request
@@ -147,9 +148,10 @@ class GlobalNamesVerifyConnector constructor(private val api: GlobalNamesVerifyA
      * @return true if received pong
      */
     fun ping(): Boolean {
-        val output = api.callGet(
-            api.apiURL + "ping"
-        )
+        val output =
+            api.callGet(
+                api.apiURL + "ping",
+            )
         return output == "pong"
     }
 
@@ -157,12 +159,13 @@ class GlobalNamesVerifyConnector constructor(private val api: GlobalNamesVerifyA
      * Get the version of the endpoint
      */
     fun version(): Version {
-        val output = api.callGet(
-            api.apiURL + "version"
-        )
+        val output =
+            api.callGet(
+                api.apiURL + "version",
+            )
         return json.decodeFromString(
             Version.serializer(),
-            output
+            output,
         )
     }
 
@@ -171,12 +174,13 @@ class GlobalNamesVerifyConnector constructor(private val api: GlobalNamesVerifyA
      */
 
     fun dataSources(): List<DataSource> {
-        val output = api.callGet(
-            api.apiURL + "data_sources"
-        )
+        val output =
+            api.callGet(
+                api.apiURL + "data_sources",
+            )
         return json.decodeFromString(
             ListSerializer(DataSource.serializer()),
-            output
+            output,
         )
     }
 
@@ -186,12 +190,13 @@ class GlobalNamesVerifyConnector constructor(private val api: GlobalNamesVerifyA
 
     fun dataSource(id: Int): DataSource {
         if (id <= 0) throw IllegalArgumentException("ID of data source must be greater than 0")
-        val output = api.callGet(
-            api.apiURL + "data_sources/$id"
-        )
+        val output =
+            api.callGet(
+                api.apiURL + "data_sources/$id",
+            )
         return json.decodeFromString(
             DataSource.serializer(),
-            output
+            output,
         )
     }
 
@@ -199,25 +204,26 @@ class GlobalNamesVerifyConnector constructor(private val api: GlobalNamesVerifyA
      * Get the info about one or many organisms
      */
     fun verifications(query: VerificationQuery): Verification {
-        val output = api.callPost(
-            api.apiURL + "verifications",
-            requestBody = json.encodeToString(query)
-        )
+        val output =
+            api.callPost(
+                api.apiURL + "verifications",
+                requestBody = json.encodeToString(query),
+            )
         return json.decodeFromString(
             Verification.serializer(),
-            output
+            output,
         )
     }
 
 /*    fun taxonkeyByName(name: String): TaxonSearchResponse {
         val output = api.call(
             api.apiURL + "species/match",
-            mutableMapOf("name" to name)
+            mutableMapOf("name" to name),
         )
 
         return json.decodeFromString(
             TaxonSearchResponse.serializer(),
-            output
+            output,
         )
     }
 

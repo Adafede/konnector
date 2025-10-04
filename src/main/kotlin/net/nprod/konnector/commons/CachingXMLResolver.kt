@@ -26,16 +26,22 @@ class CachingXMLResolver : XMLResolver {
     val store: ConcurrentHashMap<String, String> = ConcurrentHashMap()
     internal val logger = KotlinLogging.logger {}
 
-    override fun resolveEntity(publicID: String?, systemID: String?, baseURI: String?, namespace: String?): String {
+    override fun resolveEntity(
+        publicID: String?,
+        systemID: String?,
+        baseURI: String?,
+        namespace: String?,
+    ): String {
         if ((systemID == "mathml-in-pubmed.mod") or (systemID == null)) return ""
         logger.debug("publicID: $publicID  systemID: $systemID  baseURI: $baseURI, namespace: $namespace")
         if (!store.containsKey(systemID)) { // Checks in cache
             // We take the name of the file
             val fileName = systemID!!.takeLastWhile { it != '/' }
             val f = javaClass.getResource("/$fileName")
-            val v = f?.readText() ?: runBlocking {
-                client.get(systemID)
-            }
+            val v =
+                f?.readText() ?: runBlocking {
+                    client.get(systemID)
+                }
             store[systemID] = v.toString()
         } else {
             logger.debug("Using cache for $systemID")
