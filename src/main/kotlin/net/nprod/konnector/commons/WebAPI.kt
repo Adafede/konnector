@@ -9,6 +9,7 @@
 package net.nprod.konnector.commons
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -16,8 +17,6 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.content.TextContent
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -85,7 +84,7 @@ interface WebAPI {
      * call the API
      *
      * @param url The URL to query
-     * @param params a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
+     * @param parameters a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
      * @param retries how many times the query is going to retry
      * @throws NonExistent when we receive a 404 for a non existent entry
      * @throws BadRequestError when we have an invalid request (400)
@@ -98,24 +97,17 @@ interface WebAPI {
         url: String,
         parameters: Map<String, String>? = null,
         retries: Int = 3,
-        post: Boolean = false,
-        body: String = ""
     ): String {
-        log.debug("Connecting to $url")
-        return if (post) {
-            log.error("Deprecated: Should call callPost(...)")
-            callGet(url, parameters, retries)
-        } else {
-            log.error("Deprecated: Should call callGet(...)")
-            callPost(url, parameters, retries, body)
-        }
+        log.debug("Connecting to {}", url)
+        // Deprecated: always call callGet for backward compatibility
+        return callGet(url, parameters, retries)
     }
 
     /**
      * call the API
      *
      * @param url The URL to query
-     * @param params a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
+     * @param parameters a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
      * @param retries how many times the query is going to retry
      * @throws NonExistent when we receive a 404 for a non existent entry
      * @throws BadRequestError when we have an invalid request (400)
@@ -125,23 +117,24 @@ interface WebAPI {
     @Suppress("ThrowsCount") // Yes we throw a lot, but for a good reason I guess
     private fun call(retries: Int = 3, responseGenerator: suspend () -> HttpResponse): String {
         return try {
-            val call = runBlocking {
-                delay(calcDelay())
+            val call =
+                runBlocking {
+                    delay(calcDelay())
 
-                val response: HttpResponse = responseGenerator()
+                    val response: HttpResponse = responseGenerator()
 
-                delayUpdate(response)
-                when (response.status.value) {
-                    HttpStatusCode.OK.value -> response.bodyAsText()
-                    HttpStatusCode.NotFound.value -> throw NonExistent
-                    HttpStatusCode.BadRequest.value -> throw BadRequestError(response.bodyAsText())
-                    HttpStatusCode.TooManyRequests.value -> {
-                        delay(retryDelay)
-                        throw TooManyRequests
-                    } // We block for 2s in case of rate limiting trigger
-                    else -> throw UnManagedReturnCode(response.status.value)
+                    delayUpdate(response)
+                    when (response.status.value) {
+                        HttpStatusCode.OK.value -> response.body<String>()
+                        HttpStatusCode.NotFound.value -> throw NonExistent
+                        HttpStatusCode.BadRequest.value -> throw BadRequestError(response.body<String>())
+                        HttpStatusCode.TooManyRequests.value -> {
+                            delay(retryDelay)
+                            throw TooManyRequests
+                        }
+                        else -> throw UnManagedReturnCode(response.status.value)
+                    }
                 }
-            }
             call
         } catch (e: KnownError) {
             if (retries > 0) return call(retries - 1, responseGenerator)
@@ -153,9 +146,9 @@ interface WebAPI {
      * call the API with POST
      *
      * @param url The URL to query
-     * @param params a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
+     * @param parameters a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
      * @param retries how many times the query is going to retry (default 0)
-     * @param body request body
+     * @param requestBody request body
      * @throws NonExistent when we receive a 404 for a non existent entry
      * @throws BadRequestError when we have an invalid request (400)
      * @throws TooManyRequests when we had too many requests (429)
@@ -165,15 +158,16 @@ interface WebAPI {
         url: String,
         parameters: Map<String, String>? = null,
         retries: Int = 0,
-        requestBody: String = ""
+        requestBody: String = "",
     ): String {
-        log.debug("POST to $url, parameters: $parameters, body: $requestBody")
+        log.debug("POST to {}, parameters: {}, body: {}", url, parameters, requestBody)
         return call(retries) {
-            val response: HttpResponse = httpClient.post(url) {
-                parameters?.forEach { (k, v) -> parameter(k, v) }
-                header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody(requestBody)
-            }
+            val response: HttpResponse =
+                httpClient.post(url) {
+                    parameters?.forEach { (k, v) -> parameter(k, v) }
+                    header(HttpHeaders.ContentType, ContentType.Application.Json)
+                    setBody(requestBody)
+                }
             response
         }
     }
@@ -182,7 +176,7 @@ interface WebAPI {
      * call the API with GET
      *
      * @param url The URL to query
-     * @param params a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
+     * @param parameters a map of the HTTP request parameters that will be sent by GET (so don't make them too big)
      * @param retries how many times the query is going to retry (default 3)
      * @throws NonExistent when we receive a 404 for a non existent entry
      * @throws BadRequestError when we have an invalid request (400)
@@ -192,9 +186,9 @@ interface WebAPI {
     fun callGet(
         url: String,
         parameters: Map<String, String>? = null,
-        retries: Int = 3
+        retries: Int = 3,
     ): String {
-        log.debug("GET to $url, parameters: $parameters")
+        log.debug("GET to {}, parameters: {}", url, parameters)
         return call(retries) {
             httpClient.get(url) {
                 parameters?.forEach { (k, v) -> parameter(k, v) }
@@ -210,25 +204,21 @@ interface WebAPI {
     @Deprecated(
         level = DeprecationLevel.WARNING,
         message = "This parameter was not used and is going to be removed",
-        replaceWith = ReplaceWith(expression = "newClient()")
+        replaceWith = ReplaceWith(expression = "newClient()"),
     )
     fun newClient(module: String): HttpClient = newClient()
 
     /**
      * Obtain a new HTTP client
-     *
-     * @param module Unused kept for backward compatibility
      */
-
-    fun newClient(): HttpClient {
-        return HttpClient(CIO) {
+    fun newClient(): HttpClient =
+        HttpClient(CIO) {
             expectSuccess = false
             engine {
-                threadsCount = DEFAULT_HTTP_CLIENT_THREADS
+                // threadsCount is deprecated, so do not set it
                 with(endpoint) {
                     connectAttempts = DEFAULT_HTTP_CLIENT_CONNECT_ATTEMPTS
                 }
             }
         }
-    }
 }

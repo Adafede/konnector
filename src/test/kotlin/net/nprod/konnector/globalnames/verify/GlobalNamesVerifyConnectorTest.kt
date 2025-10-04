@@ -8,12 +8,14 @@
 
 package net.nprod.konnector.globalnames.verify
 
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import kotlin.time.ExperimentalTime
 
 const val MINIMAL_NUMBER_OF_SOURCES = 100
 
 @ExperimentalTime
+@Tag("integration")
 internal class GlobalNamesVerifyConnectorTest {
     private var connector = GlobalNamesVerifyConnector(OfficialGlobalNamesVerifyAPI())
 
@@ -43,21 +45,24 @@ internal class GlobalNamesVerifyConnectorTest {
 
     @Test
     fun verifications() {
-        val source: Verification = connector.verifications(
-            VerificationQuery(
-                nameStrings = listOf(
-                    "Pomatomus soltator",
-                    "Bubu bubo (Linnaeus, 1758)" // The error here is on purpose, so we get no preferred result
+        val source: Verification =
+            connector.verifications(
+                VerificationQuery(
+                    nameStrings =
+                        listOf(
+                            "Pomatomus soltator",
+                            "Bubu bubo (Linnaeus, 1758)", // The error here is on purpose, so we get no preferred result
+                        ),
+                    preferredSources = listOf(1, 12, 169),
+                    withVernaculars = false,
                 ),
-                preferredSources = listOf(1, 12, 169),
-                withVernaculars = false
             )
-        )
-        assert(source.names.size==2)
+        assert(source.names.size == 2)
         assert(
-            source.names.first {
-                it.name == "Pomatomus soltator"
-            }.bestResult.currentName == "Pomatomus saltatrix (Linnaeus, 1766)"
+            source.names
+                .first {
+                    it.name == "Pomatomus soltator"
+                }.bestResult.currentName == "Pomatomus saltatrix (Linnaeus, 1766)",
         )
     }
 }

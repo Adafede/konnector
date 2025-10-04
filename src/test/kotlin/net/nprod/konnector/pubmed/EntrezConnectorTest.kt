@@ -1,7 +1,7 @@
 package net.nprod.konnector.pubmed
 
 import io.ktor.util.KtorExperimentalAPI
-import net.nprod.konnector.pubmed.models.Esearch
+
 import net.nprod.konnector.pubmed.models.ESearch
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
-@KtorExperimentalAPI
 internal class EntrezConnectorTest {
     private val eFetchPubmedParser = EFetchPubmedParser()
     private var eSearchConn: EntrezConnector = EntrezConnector(System.getenv("NCBI_APIKEY"), 1000)
